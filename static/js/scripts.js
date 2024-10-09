@@ -3,6 +3,7 @@ if (document.getElementById('mapid')) {
 
     // Initialiser la carte
     var map = L.map('mapid').setView([28.2096, 83.9856], 10);
+    map.on('click', onMapClick);
     console.log('Carte initialisée avec les coordonnées de l\'Annapurna.');
 
     // Charger les tuiles OpenStreetMap
@@ -37,10 +38,16 @@ if (document.getElementById('mapid')) {
     gpxFiles.forEach(function(gpxFile) {
         var gpxFilePath = gpxFile; // Les fichiers doivent être dans le même répertoire
 
-        console.log('Tentative de chargement du fichier GPX : ' + gpxFilePath);
+        // console.log('Tentative de chargement du fichier GPX : ' + gpxFilePath);
 
         new L.GPX(gpxFilePath, {
-            async: true
+            async: false,
+            marker_options: {
+                startIcon: false,  // Masquer l'icône de début
+                endIcon: false,     // Masquer l'icône de fin
+                shadowUrl: '',
+                displayPopup: false,
+            }
         }).on('loaded', function(e) {
             console.log('Fichier GPX ' + gpxFile + ' chargé avec succès.');
             map.fitBounds(e.target.getBounds());
@@ -49,3 +56,12 @@ if (document.getElementById('mapid')) {
         }).addTo(map);
     });
 }
+var marker = null
+function onMapClick(e) {
+    if (marker) {
+        map.removeLayer(marker); // delete existing marker
+    }
+    marker = new L.Marker(e.latlng, {draggable:true});
+    map.addLayer(marker);
+    marker.bindPopup("<b>Hello world!</b><br />I am a popup.").openPopup();
+};
