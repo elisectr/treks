@@ -5,7 +5,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Trek 1 - Annapurna (Jour 1)
+// Tour des Annapurnas - Besisahar à Bahundanda (Jour 1)
 if (document.getElementById('mapid1')) {
     var map1 = L.map('mapid1').setView([28.2096, 83.9856], 10); // Coordonnées de l'Annapurna
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
