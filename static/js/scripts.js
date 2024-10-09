@@ -56,12 +56,109 @@ if (document.getElementById('mapid')) {
         }).addTo(map);
     });
 }
-var marker = null
-function onMapClick(e) {
-    if (marker) {
-        map.removeLayer(marker); // delete existing marker
+
+
+var marker = null; // Variable pour stocker le marqueur actuel
+
+async function onMapClick(e) {
+    // Obtenir les coordonnées du clic
+    const { lat, lng } = getClickCoordinates(e);
+    
+    // Trouver le point GPX le plus proche
+    const gpxCoordinates = await Promise.all(gpxFiles.map(file => extractCoordinatesFromGPX(file)));
+    const closestGPX = findClosestGPX(lat, lng, gpxCoordinates);
+
+    // Préparer le contenu du pop-up
+    let popupContent = "<b>Aucun point GPX trouvé!</b>";
+    if (closestGPX.closestFileIndex !== -1) {
+        popupContent = `<b>Proche d'un point GPX!</b><br /> 
+                        Fichier GPX: ${closestGPX.closestFileIndex + 1}<br /> 
+                        Distance: ${closestGPX.closestDistance.toFixed(2)} m.`;
     }
-    marker = new L.Marker(e.latlng, {draggable:true});
+
+    // Si un marqueur existe déjà, le supprimer
+    if (marker) {
+        map.removeLayer(marker);
+    }
+
+    // Créer un nouveau marqueur à l'emplacement du clic
+    marker = new L.Marker(e.latlng, { draggable: true });
     map.addLayer(marker);
-    marker.bindPopup("<b>Hello world!</b><br />I am a popup.").openPopup();
-};
+    marker.bindPopup(popupContent).openPopup();
+}
+
+
+function getClickCoordinates(e) {
+    return {
+        lat: e.latlng.lat,
+        lng: e.latlng.lng
+    };
+}
+
+function findClosestGPX(lat, lng, gpxCoordinates) {
+    let closestDistance = Infinity;
+    let closestPoint = null;
+    let closestFileIndex = -1;
+
+    // Afficher les coordonnées de l'utilisateur
+    console.log(`Coordonnées de clic: Latitude: ${lat}, Longitude: ${lng}`);
+
+    // Parcourir les coordonnées extraites des fichiers GPX
+    gpxCoordinates.forEach((coordinates, index) => {
+        coordinates.forEach(point => {
+            const distance = L.latLng(lat, lng).distanceTo(L.latLng(point.latitude, point.longitude));
+
+            // Afficher les détails du point et la distance calculée
+            console.log(`Point GPX trouvé - Fichier GPX: ${index + 1}, 
+                         Latitude: ${point.latitude}, 
+                         Longitude: ${point.longitude}, 
+                         Distance au clic: ${distance.toFixed(2)} m`);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestPoint = L.latLng(point.latitude, point.longitude);
+                closestFileIndex = index; // Garder une trace de l'index du fichier GPX
+
+                // Afficher la nouvelle plus proche distance
+                console.log(`Nouveau point le plus proche trouvé - 
+                             Fichier GPX: ${closestFileIndex + 1}, 
+                             Distance: ${closestDistance.toFixed(2)} m`);
+            }
+        });
+    });
+
+    return {
+        closestPoint: closestPoint,
+        closestFileIndex: closestFileIndex,
+        closestDistance: closestDistance
+    };
+}
+
+
+
+async function extractCoordinatesFromGPX(gpxFilePath) {
+    const response = await fetch(gpxFilePath); // Charger le fichier GPX
+    const text = await response.text(); // Obtenir le contenu du fichier en tant que texte
+
+    const parser = new DOMParser(); // Créer un nouvel analyseur DOM
+    const xmlDoc = parser.parseFromString(text, "application/xml"); // Analyser le texte en XML
+
+    const coordinates = []; // Liste pour stocker les coordonnées
+
+    // Extraire les points de suivi (trackpoints)
+    const trackpoints = xmlDoc.getElementsByTagName("trkpt");
+    
+    // Parcourir chaque point de suivi et récupérer la latitude et la longitude
+    for (let i = 0; i < trackpoints.length; i++) {
+        const lat = parseFloat(trackpoints[i].getAttribute("lat")); // Récupérer la latitude
+        const lon = parseFloat(trackpoints[i].getAttribute("lon")); // Récupérer la longitude
+        
+        // Ajouter un dictionnaire avec latitude et longitude à la liste
+        coordinates.push({
+            latitude: lat,
+            longitude: lon
+        });
+    }
+
+    return coordinates; // Retourner la liste de dictionnaires
+}
