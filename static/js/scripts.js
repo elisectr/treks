@@ -20,7 +20,7 @@ if (document.getElementById('mapid')) {
     console.log('Tuiles OpenStreetMap chargées.');
 
     // Charger le fichier GPX
-    var gpxFilePath = "static/gpx/activity_14588387021.gpx";
+    var gpxFilePath = "static/gpx/annapurna_jour1.gpx";
     console.log('Tentative de chargement du fichier GPX : ' + gpxFilePath);
 
     new L.GPX(gpxFilePath, {
